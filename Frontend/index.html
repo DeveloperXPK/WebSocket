@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Sockets Chat</title>
+</head>
+<body>
+    <h1>Sockets Chat</h1>
+    <div id="historial"></div>
+    <input id="mensaje" type="text" placeholder="Escribe tu mensaje">
+
+    <script>
+        // Conectamos con el puerto del servidor establecido anteriormente en el backend
+        const socket = new WebSocket('ws://localhost:8000') 
+
+        const mensaje = document.querySelector('#mensaje'); // Obtenemos input con el id mensaje
+        const historial = document.querySelector('#historial') // Obtenemos el div con el id historial
+
+        // Creamos un evento cuando escribimos el mensaje dentro del input
+        // En este caso es cuando se presiona "Enter"
+        mensaje.addEventListener('keypress', (event) => {
+
+            // Si se presiona "Enter" se envia el mensaje
+            if(event.code === 'Enter') {
+                socket.send(mensaje.value); // Enviamos el valor del input (mensaje)
+                mensaje.value = ''; // Limpiamos el input
+            }
+        })
+
+        // Evento que se ejecuta cuando se conecta un nuevo usuario
+        socket.addEventListener('open', saveHistory)
+
+        // Evento que se ejecuta cuando se recibe un mensaje
+        socket.addEventListener('message', saveHistory)
+
+        // Evento que se ejecuta cuando ocurre un error
+        socket.addEventListener('error', saveHistory)
+
+        // Evento que se ejecuta cuando se desconecta un usuario
+        socket.addEventListener('close', saveHistory)
+
+        // Mediante la asincronia de JavaScript, podemos esperar a que se reciba el mensaje 
+        // para ejecutar la funcion
+        async function saveHistory(event){
+            const message = await event.data // Esperamos a que se reciba el mensaje
+
+            // Dependiendo del tipo de evento, se ejecuta una accion
+            switch(event.type){
+
+                // Si se conecta un nuevo usuario retornamos un mensaje que indica que se ha conectado
+                case 'open':
+                    historial.innerHTML += `<p>Nuevo Usuario conectado</p>`
+                    break;
+
+                // Si se recibe un mensaje, se guarda en el historial y lo mostramos
+                case 'message':
+                    historial.innerHTML += `<p>${message}</p>`
+                    break;
+
+                // Si ocurre un error, se guarda en el historial y se muestra un mensaje
+                case 'error': 
+                    historial.innerHTML += `Ha ocurrido un error`
+                    break;
+
+                // Si se desconecta un usuario, se guarda en el historial y se muestra un mensaje
+                case 'close':
+                    historial.innerHTML += `<p>Usuario desconectado</p>`
+                    break;
+            }
+        }
+        
+    </script>
+    
+</body>
+</html>
